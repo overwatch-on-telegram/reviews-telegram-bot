@@ -8,7 +8,7 @@ import { appendFileSync } from 'fs';
 import { EventEmitter } from 'events';
 
 import TelegramBot from 'node-telegram-bot-api';
-import { fetchTokenStatistics, formatTokenStatistics } from '@overwatch-on-telegram/core-ai-analyzer';
+import { WAITING_GENERATION_AUDIT_MESSAGE, fetchTokenStatistics, fetchAuditData, formatTokenStatistics, waitForAuditEndOrError, triggerAudit, escapeMarkdownV2 } from '@overwatch-on-telegram/core-ai-analyzer';
 
 import { JsonDB, Config } from 'node-json-db';
 const db = new JsonDB(new Config(process.env.DATABASE_PATH, true, true, '/'));
@@ -192,9 +192,12 @@ const checkSendToken = async (tokenData, firstTry) => {
 
         console.log(`🤖 ${tokenData.name} (${tokenData.symbol}) is validated! (${tokenStatistics.isValidated ? 'COMPLETE': 'PARTIAL'})`);
 
-        const HEADER = `__*New Token Detected by Overwatch\\!*__\n\n\n`;
+        const initialAuditData = await fetchAuditData(contractAddress);
+        const initialAuditIsReady = initialAuditData && initialAuditData.status === 'success';
+        
+        const HEADER = `__*New Token Detected by LuckBlock\\!*__\n\n\n`;
 
-        const statisticsMessage = HEADER + formatTokenStatistics(tokenStatistics, true);
+        const statisticsMessage = HEADER + formatTokenStatistics(tokenStatistics, true, initialAuditIsReady ? JSON.parse(initialAuditData?.data) : null, true);
     
         const message = !previousMessageId ? await bot.sendMessage(process.env.TELEGRAM_CHAT_ID, statisticsMessage, {
             parse_mode: 'MarkdownV2',
@@ -214,8 +217,6 @@ const checkSendToken = async (tokenData, firstTry) => {
             });
         }
 
-        /*
-    
         if (!initialAuditIsReady) {
     
             triggerAudit(contractAddress);
@@ -250,7 +251,6 @@ const checkSendToken = async (tokenData, firstTry) => {
                 });
             });
         }
-        */
 
     }
     else {
