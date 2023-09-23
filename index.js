@@ -195,9 +195,9 @@ const checkSendToken = async (tokenData, firstTry) => {
         const initialAuditData = await fetchAuditData(contractAddress);
         const initialAuditIsReady = initialAuditData && initialAuditData.status === 'success';
         
-        const HEADER = `__*New Token Detected by LuckBlock\\!*__\n\n\n`;
+        const HEADER = `__*New Token Detected by Overwatch\\!*__\n\n\n`;
 
-        const statisticsMessage = HEADER + formatTokenStatistics(tokenStatistics, true, initialAuditIsReady ? JSON.parse(initialAuditData?.data) : null, true);
+        const statisticsMessage = HEADER + formatTokenStatistics(tokenStatistics, true);
     
         const message = !previousMessageId ? await bot.sendMessage(process.env.TELEGRAM_CHAT_ID, statisticsMessage, {
             parse_mode: 'MarkdownV2',
@@ -216,6 +216,8 @@ const checkSendToken = async (tokenData, firstTry) => {
                 messageId: message.message_id
             });
         }
+
+        /*
     
         if (!initialAuditIsReady) {
     
@@ -251,6 +253,7 @@ const checkSendToken = async (tokenData, firstTry) => {
                 });
             });
         }
+        */
 
     }
     else {

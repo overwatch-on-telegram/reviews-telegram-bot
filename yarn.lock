@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@luckblock/core-ai-analyzer-js@1.4.3":
+"@overwatch-on-telegram/core-ai-analyzer@1.4.3":
   version "1.4.3"
-  resolved "https://npm.pkg.github.com/download/@luckblock/core-ai-analyzer-js/1.4.3/7ab32d1c70c04e45d9c0ff6d3f656d55c4b34368#7ab32d1c70c04e45d9c0ff6d3f656d55c4b34368"
-  integrity sha512-/JcVIHJgST6xJ/7R+4CrVtqWpsovxT/Zl2KI3PtD/sCXZL4NOO425ewYotx6JPusBunCxXExK+ptKm/BVxyo9A==
+  resolved "https://npm.pkg.github.com/download/@overwatch-on-telegram/core-ai-analyzer/1.4.3/396359b73804b135687d522be02f24bf4da5e8a7#396359b73804b135687d522be02f24bf4da5e8a7"
+  integrity sha512-D9+fzqxwYyzghfxSUvBajQXY+hdDoWTzj/mgpBNLXbfSrA6+oLx/fKew6IHtI7MAee/5/w3W9DplaPec93WZOA==
   dependencies:
     aveta "^1.3.0"
     markdown-escape "^2.0.0"
