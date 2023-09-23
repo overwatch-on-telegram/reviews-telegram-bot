@@ -8,7 +8,7 @@ import { appendFileSync } from 'fs';
 import { EventEmitter } from 'events';
 
 import TelegramBot from 'node-telegram-bot-api';
-import { WAITING_GENERATION_AUDIT_MESSAGE, fetchTokenStatistics, fetchAuditData, formatTokenStatistics, waitForAuditEndOrError, triggerAudit, escapeMarkdownV2 } from '@luckblock-project/core-ai-analyzer-js';
+import { WAITING_GENERATION_AUDIT_MESSAGE, fetchTokenStatistics, fetchAuditData, formatTokenStatistics, waitForAuditEndOrError, triggerAudit, escapeMarkdownV2 } from '@overwatch-on-telegram/core-ai-analyzer-js';
 
 import { JsonDB, Config } from 'node-json-db';
 const db = new JsonDB(new Config(process.env.DATABASE_PATH, true, true, '/'));
@@ -192,9 +192,6 @@ const checkSendToken = async (tokenData, firstTry) => {
 
         console.log(`🤖 ${tokenData.name} (${tokenData.symbol}) is validated! (${tokenStatistics.isValidated ? 'COMPLETE': 'PARTIAL'})`);
 
-        const initialAuditData = await fetchAuditData(contractAddress);
-        const initialAuditIsReady = initialAuditData && initialAuditData.status === 'success';
-        
         const HEADER = `__*New Token Detected by Overwatch\\!*__\n\n\n`;
 
         const statisticsMessage = HEADER + formatTokenStatistics(tokenStatistics, true);
