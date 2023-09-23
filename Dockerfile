@@ -7,6 +7,8 @@ WORKDIR /usr/src/app
 # Copiez les fichiers package.json et package-lock.json (si disponible)
 COPY package*.json ./
 
+ARG GITHUB_TOKEN
+
 # Exécutez la commande pour ajouter le token à npm et installer les dépendances
 RUN echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > .npmrc && \
     echo "@overwatch-on-telegram:registry=https://npm.pkg.github.com/" >> .npmrc && \
