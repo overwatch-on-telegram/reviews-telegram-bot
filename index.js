@@ -8,7 +8,7 @@ import { appendFileSync } from 'fs';
 import { EventEmitter } from 'events';
 
 import TelegramBot from 'node-telegram-bot-api';
-import { WAITING_GENERATION_AUDIT_MESSAGE, fetchTokenStatistics, fetchAuditData, formatTokenStatistics, waitForAuditEndOrError, triggerAudit, escapeMarkdownV2 } from '@overwatch-on-telegram/core-ai-analyzer-js';
+import { WAITING_GENERATION_AUDIT_MESSAGE, fetchTokenStatistics, fetchAuditData, formatTokenStatistics, waitForAuditEndOrError, triggerAudit, escapeMarkdownV2 } from '@overwatch-on-telegram/core-ai-analyzer';
 
 import { JsonDB, Config } from 'node-json-db';
 const db = new JsonDB(new Config(process.env.DATABASE_PATH, true, true, '/'));
