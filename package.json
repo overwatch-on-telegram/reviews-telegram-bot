@@ -5,18 +5,18 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "preinstall": "npm set //npm.pkg.github.com/:_authToken $GITHUB_TOKEN"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "type": "module",
   "license": "ISC",
   "dependencies": {
-    "@overwatch-on-telegram/core-ai-analyzer": "3.0.0",
+    "@overwatch-on-telegram/core-ai-analyzer": "https://github.com/overwatch-on-telegram/core-ai-analyzer",
     "dotenv": "^16.3.1",
     "easy-json-database": "^1.5.1",
     "https-proxy-agent": "^7.0.1",
+    "listingspyscraper": "https://github.com/overwatch-on-telegram/listingspyscraper",
     "node-json-db": "^2.2.0",
     "node-telegram-bot-api": "^0.61.0",
     "ws": "^8.13.0"

@@ -1,121 +1,28 @@
 import { config } from 'dotenv';
 config();
 
-import ws from 'ws';
-
-import { appendFileSync } from 'fs';
-
 import { EventEmitter } from 'events';
 
 import TelegramBot from 'node-telegram-bot-api';
 import { WAITING_GENERATION_AUDIT_MESSAGE, fetchTokenStatistics, fetchAuditData, formatTokenStatistics, waitForAuditEndOrError, triggerAudit, escapeMarkdownV2 } from '@overwatch-on-telegram/core-ai-analyzer';
 
-import { JsonDB, Config } from 'node-json-db';
-const db = new JsonDB(new Config(process.env.DATABASE_PATH, true, true, '/'));
+import newPairEmitter from 'listingspyscraper';
 
-(async () => {
-    if (!await db.exists('/tokens')) {
-        db.push('/tokens', {});
-    }
-})();
+import EasyJsonDatabase from 'easy-json-database';
+const retryDb = new EasyJsonDatabase('retry_'+process.env.DATABASE_PATH);
+const processedDb = new EasyJsonDatabase('processed_'+process.env.DATABASE_PATH);
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
     polling: true
 });
 
-let wsClient = null;
 
-let pingInterval = null;
-let lastPingReceivedTs = Date.now();
+async function handlePair (res) {
 
-function connect() {
-    console.log("Attempting to connect...");
+    console.log(res);
 
-    wsClient = new ws('wss://ws.dextools.io/');
-
-    wsClient.on('open', function open() {
-        handleOpen();
-    });
-
-    wsClient.on('close', function close() {
-        console.log('Connection lost, retrying in 5 seconds...');
-        setTimeout(connect, 5000); // Retry every 5 seconds
-
-        if (pingInterval) {
-            clearInterval(pingInterval);
-        }
-    });
-
-    wsClient.on('message', async function incoming(data) {
-        handleMessage(data);
-    });
-
-    wsClient.on('error', function error(e) {
-        console.log('Error: ', e);
-    });
-}
-
-connect();
-
-function handleOpen () {
-    wsClient.send(JSON.stringify({
-        jsonrpc: "2.0",
-        method: "subscribe",
-        params: {
-            chain: "ether",
-            channel: "uni:common"
-        },
-        id: 1
-    }));
-
-    wsClient.send(JSON.stringify({
-        jsonrpc: "2.0",
-        method: "subscribe",
-        params: {
-            chain: "ether",
-            channel: "uni:pools"
-        },
-        id: 2
-    }));
-
-    pingInterval = setInterval(() => {
-        if (Date.now() - lastPingReceivedTs > 60_000 * 3) {
-            console.log('Connection lost (no ping), retrying in 5 seconds...');
-            setTimeout(connect, 5000); // Retry every 5 seconds
-            if (pingInterval) {
-                clearInterval(pingInterval);
-            }
-            wsClient.terminate();
-        }
-        console.log(`🤖 Sending ping...`);
-        wsClient.send('ping');
-    }, 60_000);
-}
-
-function handleMessage (data) {
-
-    const receivedString = Buffer.from(data).toString('utf8');
-
-    if (receivedString === 'pong') {
-        console.log(`🤖 Received pong!`);
-        lastPingReceivedTs = Date.now();
-        return;
-    }
-
-    const res = JSON.parse(receivedString).result;
-
-    appendFileSync('log.json', JSON.stringify(res) + '\n', 'utf8')
-
-    //if (!res?.data?.pair?.creation) return;
-    if (res.data.event !== 'create') return;
-
-    //const main = res.data.pair.token1;
-    //const pair = res.data.pair.token0;
-
-    // get the pair that is not weth
-
-    const main = res.data.pair.token0.symbol === 'WETH' ? res.data.pair.token1 : res.data.pair.token0;
-    const pair = res.data.pair.token0.symbol === 'WETH' ? res.data.pair.token0 : res.data.pair.token1;
+    const main = res.token0.symbol === 'WETH' ? res.token1 : res.token0;
+    const pair = res.token0.symbol === 'WETH' ? res.token0 : res.token1;
 
     if (!pair || !main) return;
 
@@ -136,15 +43,24 @@ function handleMessage (data) {
         pairContractAddress
     }
 
+    if ((processedDb.get('tokens') || []).includes(tokenData.contractAddress)) {
+        console.log(`🤖 ${symbol} (${contractAddress}) is already processed!`);
+        return;
+    };
+
     console.log(`🤖 Queueing checking ${symbol} (${contractAddress})...`);
 
     fetchTokenStatistics(tokenData.contractAddress).catch(() => {});
 
+    processedDb.push('tokens', tokenData.contractAddress);
     setTimeout(() => {
+        // i want to add the contract address to a list in the database without its data (light db)
         checkSendToken(tokenData, true);
-    }, 60_000);
+    }, 10_000);
 
 };
+
+newPairEmitter.on('newPair', handlePair);
 
 
 const checkSendToken = async (tokenData, firstTry) => {
@@ -163,7 +79,7 @@ const checkSendToken = async (tokenData, firstTry) => {
     if (tokenStatistics.isValidated || (tokenStatistics.isPartiallyValidated && firstTry)) {
 
         if (tokenStatistics.isPartiallyValidated && firstTry) {
-            db.push(`/tokens/${tokenData.contractAddress}`, {
+            retryDb.push('tokens', {
                 ...tokenData,
                 addedAt: Date.now()
             });
@@ -187,7 +103,7 @@ const checkSendToken = async (tokenData, firstTry) => {
                 });
             }
             previousMessageId = tokenData.messageId;
-            db.delete(`/tokens/${tokenData.contractAddress}`);
+            retryDb.set('tokens', db.get('tokens').filter((t) => t.contractAddress !== tokenStatistics.contractAddress));
         }
 
         console.log(`🤖 ${tokenData.name} (${tokenData.symbol}) is validated! (${tokenStatistics.isValidated ? 'COMPLETE': 'PARTIAL'})`);
@@ -210,7 +126,7 @@ const checkSendToken = async (tokenData, firstTry) => {
         });
 
         if (tokenStatistics.isPartiallyValidated && firstTry) {
-            db.push(`/tokens/${tokenData.contractAddress}`, {
+            retryDb.push('tokens', {
                 ...tokenData,
                 addedAt: Date.now(),
                 messageId: message.message_id
@@ -263,9 +179,9 @@ const checkSendToken = async (tokenData, firstTry) => {
 
 }
 
-setInterval(async () => {
+setInterval(() => {
 
-    const tokensToRetry = await db.getData('/tokens');
+    const tokensToRetry = retryDb.get('/tokens') || [];
 
     console.log(`🤖 ${Object.keys(tokensToRetry).length} tokens to retry...`);
 
@@ -273,7 +189,7 @@ setInterval(async () => {
         const tokenData = tokensToRetry[token];
         // if token is added more than 60 minutes ago, remove it from the list
         if (Date.now() - tokenData.addedAt > 60 * 60 * 1000) {
-            await db.delete(`/tokens/${tokenData.contractAddress}`);
+            retryDb.set('tokens', retryDb.get('tokens').filter((t) => t.contractAddress !== tokenData.contractAddress));
         } else {
             checkSendToken(tokenData, false);
         }
